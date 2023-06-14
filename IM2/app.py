@@ -9,7 +9,6 @@ import re
 app = Flask(__name__, static_url_path='/static')
 
 # Set up OpenAI API key
-# openai.api_key = "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"
 
 
 def extract_sentences(text):
