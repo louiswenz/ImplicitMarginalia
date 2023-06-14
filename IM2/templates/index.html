@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Implicit Marginalia</title>
+    <link rel="stylesheet" type="text/css" href="/static/style.css">
+</head>
+<body>
+    <h1>Paragraph Analysis</h1>
+    <form method="POST">
+        <textarea name="text" rows="10" cols="50"></textarea><br><br>
+        <input type="submit" value="Submit">
+    </form>
+    <br><br>
+    <div class="sentences-container">
+        {% for sentence in sentences %}
+            <div class="sentence">
+                <span>{{ sentence }}</span>
+                <div class="hover-window">
+                    <p>This is the hover window for sentence: <strong>{{ sentence }}</strong></p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    <script>
+        const sentences = document.querySelectorAll('.sentence');
+        sentences.forEach((sentence) => {
+            const span = sentence.querySelector('span');
+            const hoverWindow = sentence.querySelector('.hover-window');
+            span.addEventListener('mouseover', () => {
+                hoverWindow.style.display = 'block';
+            });
+            span.addEventListener('mouseout', () => {
+                hoverWindow.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>

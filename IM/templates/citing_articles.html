@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Citing Articles</title>
+    <link rel="stylesheet" type="text/css" href="/static/style.css">
+</head>
+<body>
+    <div class="home-button">
+        <a href="/">Home</a>
+    </div>
+    <h1>Top Articles Citing: {{ input_title }}</h1>
+    {% for title, summary in articles %}
+    <div class="article">
+        <p class="title"><a href="https://google.com">{{ title }}</a></p>
+        <p class="summary">{{ summary }}</p>
+    </div>
+    {% endfor %}
+</body>
+</html>
