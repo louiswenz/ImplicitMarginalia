@@ -30,10 +30,10 @@ def home():
 @app.route('/citing_articles', methods=['POST'])
 def citing_articles():
     # Get input article title from form submission
-    input_article_title = request.form['input_article_title']
+    find_quote = request.form['find_quote']
 
-    # Perform search to find citing articles
-    citing_titles, citing_contexts = find_citing_articles(input_article_title)
+    # Perform a search to find citing articles
+    citing_titles, citing_contexts = find_citing_articles(find_quote)
     summaries = summarize(citing_contexts)
 
     mylist = zip(citing_titles, summaries)
