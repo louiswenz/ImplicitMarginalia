@@ -9,7 +9,7 @@ app = Flask(__name__, static_url_path='/static')
 
 # Set up OpenAI API key
 # Replace with your OpenAI API key
-openai.api_key = "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"
+openai.api_key = ""
 
 # Home page
 
@@ -19,12 +19,12 @@ def home():
     return render_template('index.html')
 
 
-def zip_lists(list1, list2):
-    return zip(list1, list2)
+# def zip_lists(list1, list2):
+#     return zip(list1, list2)
 
 
-env = Environment()
-env.filters['zip_lists'] = zip_lists
+# env = Environment()
+# env.filters['zip_lists'] = zip_lists
 
 
 @app.route('/citing_articles', methods=['POST'])
