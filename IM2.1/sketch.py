@@ -2,6 +2,7 @@ import scholarly
 import requests
 from bs4 import BeautifulSoup
 import openai
+import nltk.data
 
 # Set up OpenAI API key
 # Replace with your OpenAI API key
@@ -59,8 +60,24 @@ def summarize(contexts):
     return summaries
 
 
+_sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+
+
+def split_sentence(text):
+    # Split text.
+    sentences = _sent_detector.tokenize(text)
+    # Find each sentence's offset.
+    needle = 0
+    triples = []
+    for sent in sentences:
+        start = text.find(sent, needle)
+        end = start + len(sent) - 1
+        needle += len(sent)
+        triples.append(sent)
+    # Return results
+    return sentences
+
+
 # Example usage
-input_article = "chatgpt"
-citing_titles, citing_context = find_citing_articles1(input_article)
-summary = summarize(citing_context)
-print(summary)
+text = "Some essay samples below are by students who chose to write about a challenge, while other examples may be helpful if you’re looking to write about yourself more generally. And yes, a few of these essays did help these students get accepted into the Ivy League, (I’m not telling you which!) though these are all great essays regardless of where (or if) students were admitted to their top choice school."
+print(nltk.tokenize.sent_tokenize(text, language='english'))

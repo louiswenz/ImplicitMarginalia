@@ -3,6 +3,7 @@ body {
     background-color: #f1f1f1;
     margin: 0;
     padding: 20px;
+
 }
 
 h1 {
@@ -72,4 +73,15 @@ input[type="submit"] {
     left: 50vw;
     transform: translate(-50%, -50%);
     padding: 10px 15px;
+}
+
+
+.fade-out {
+    opacity: 0.3;
+}
+
+.divider {
+    height: 1px;
+    background-color: #b0abab;
+    margin: 10px;
 }
