@@ -8,6 +8,7 @@ import re
 import nltk.data
 
 app = Flask(__name__, static_url_path='/static')
+openai.api_key = ""
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -72,9 +73,6 @@ def find_citing_articles(citation_sentence):
     return articles_title, articles_context
 
 
-openai.api_key = "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"
-
-
 def summarize(contexts):
     # Prepare the search query
     summaries = []
@@ -105,9 +103,9 @@ def process():
     input_text = data['original_text']
 
     articles_title, articles_context = find_citing_articles(input_text)
-
+    print(articles_context)
     # Return the output as a JSON response
-    return jsonify({'output_text': articles_context[0]})
+    return jsonify({'output_text': articles_context})
 
 
 if __name__ == '__main__':

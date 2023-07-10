@@ -43,8 +43,9 @@
                     body: JSON.stringify({ original_text: inputText })
                 });
                 const data = await response.json();
-                popupContent.textContent = data.output_text;
-                    popupWindow.style.display = 'block';
+                const outputText =  data.output_text.map((item) => `<p">${item}</p>`).join('');
+                popupContent.innerHTML = outputText;
+                popupWindow.style.display = 'block';
                 event.stopPropagation();
                 paragraph_container.classList.add('fade-out');
             });

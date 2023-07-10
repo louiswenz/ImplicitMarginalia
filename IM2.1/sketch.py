@@ -13,6 +13,22 @@ def find_citing_articles1(citation_sentence):
     search_url = f"https://scholar.google.com/scholar?hl=en&as_sdt=0%2C5&q={citation_sentence}"
     response = requests.get(search_url)
     soup = BeautifulSoup(response.text, 'html.parser')
+
+    links = []
+
+    for result in soup.find_all('h3', class_='gs_rt'):
+        link_element = result.find('a')
+        if link_element:
+            link = link_element['href']
+            try:
+                article_response = requests.get(link)
+                if article_response.status_code == 200:
+                    links.append(link)
+            except requests.exceptions.RequestException:
+                continue
+
+    print(len(links))
+
     articles_title = []
     articles_context = []
 
@@ -29,10 +45,10 @@ def find_citing_articles1(citation_sentence):
 
             context_paragraph = context_paragraph.replace("\n", "").strip()
             # Checking if the citation sentence is present in the context sentences
-            if citation_sentence.lower() in context_paragraph.lower():
-                articles_title.append(title)
+            # if citation_sentence.lower() in context_paragraph.lower():
+            articles_title.append(title)
 
-                articles_context.append(context_paragraph)
+            articles_context.append(context_paragraph)
 
     return articles_title, articles_context
 
@@ -79,5 +95,7 @@ def split_sentence(text):
 
 
 # Example usage
-text = "Some essay samples below are by students who chose to write about a challenge, while other examples may be helpful if you’re looking to write about yourself more generally. And yes, a few of these essays did help these students get accepted into the Ivy League, (I’m not telling you which!) though these are all great essays regardless of where (or if) students were admitted to their top choice school."
-print(nltk.tokenize.sent_tokenize(text, language='english'))
+text = "I have a dream"
+# print(nltk.tokenize.sent_tokenize(text, language='english'))
+articles_title, articles_context = find_citing_articles1(text)
+# print((articles_context))
