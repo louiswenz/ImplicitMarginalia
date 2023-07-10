@@ -101,7 +101,7 @@ def makeQ(target_sentence, field=''):
 sentence = 'I have a dream'
 results = query_api("search/works", makeQ(sentence), limit=2)
 full_text = get_result(results)[1]['text']
-contexts = find_sentence_contexts(full_text, 'i have a dream')
+contexts = find_sentence_contexts(full_text, sentence)
 print(contexts)
 # summary = summarize(results)
 # print(summary)
