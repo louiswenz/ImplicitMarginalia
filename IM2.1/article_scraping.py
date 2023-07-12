@@ -7,7 +7,7 @@ import nltk.data
 from spellchecker import SpellChecker
 
 # open ai key (do not upload to github)
-openai.api_key = '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'
+openai.api_key = ''
 
 api_key = "8mNcp3SVfrGqwZI9Oe0YivbxFPUhBMTk"  # core api key
 api_endpoint = "https://api.core.ac.uk/v3/"
