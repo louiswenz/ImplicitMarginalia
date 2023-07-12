@@ -4,8 +4,10 @@ import json
 import openai
 import re
 import nltk.data
+from spellchecker import SpellChecker
 
-openai.api_key = ''  # open ai key (do not upload to github)
+# open ai key (do not upload to github)
+openai.api_key = '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'
 
 api_key = "8mNcp3SVfrGqwZI9Oe0YivbxFPUhBMTk"  # core api key
 api_endpoint = "https://api.core.ac.uk/v3/"
@@ -16,6 +18,22 @@ def check_words_in_string(string, words):
         if word in string:
             return True
     return False
+
+
+def beautify_string(text):
+    words = nltk.word_tokenize(text)
+
+    # Separate sticky words by adding white spaces
+    beautified_words = []
+    for word in words:
+        if len(beautified_words) > 0 and beautified_words[-1][-1].isalpha() and word[0].isalpha():
+            beautified_words.append(' ')
+        beautified_words.append(word)
+
+    # Join the beautified words with appropriate white spaces
+    beautified_text = ''.join(beautified_words)
+
+    return beautified_text
 
 
 def find_sentence_contexts(text, target_sentence):
@@ -37,14 +55,11 @@ def find_sentence_contexts(text, target_sentence):
                 continue
             context = prev_sentence + " " + sentence + " " + next_sentence
             context = context.strip()
+            # context = beautify_string(context)
             contexts.append(context)
             prev_sentence, sentence, next_sentence = '', '', ''
 
-    return '\n'.join(contexts)
-
-
-def pretty_json(json_object):
-    print(json.dumps(json_object, indent=2))
+    return ' --- '.join(contexts)
 
 
 def query_api(url_fragment, query, limit=10):
@@ -59,7 +74,6 @@ def query_api(url_fragment, query, limit=10):
 
 
 def get_result(results):
-    results = results
     articles = []
     for i in results['results']:
         # if len(i['fullText']) > 2500:
@@ -94,14 +108,29 @@ def summarize(contexts):
     return summaries
 
 
+def davinci03(prompt):
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt,
+        max_tokens=200,
+        temperature=0.3,
+        n=1,
+        stop='.'
+    )
+    return response.choices[0].text.strip()
+
+
 def makeQ(target_sentence, field=''):
     return f"({target_sentence}) AND (_exists_:doi)"
 
 
 sentence = 'I have a dream'
 results = query_api("search/works", makeQ(sentence), limit=2)
-full_text = get_result(results)[1]['text']
-contexts = find_sentence_contexts(full_text, sentence)
+full_content = get_result(results)
+only_text = [x['text'] for x in full_content]
+only_titles = [x['title'] for x in full_content]
+contexts = [find_sentence_contexts(x, sentence) for x in only_text]
 print(contexts)
-# summary = summarize(results)
+
+# summary = davinci03(contexts[0])
 # print(summary)
