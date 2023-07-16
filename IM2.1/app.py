@@ -6,6 +6,11 @@ from jinja2 import Environment
 import string
 import re
 import nltk.data
+import json
+
+# core api
+api_key = "8mNcp3SVfrGqwZI9Oe0YivbxFPUhBMTk"  # core api key
+api_endpoint = "https://api.core.ac.uk/v3/"
 
 app = Flask(__name__, static_url_path='/static')
 openai.api_key = ""
@@ -95,17 +100,94 @@ def summarize(contexts):
         summaries.append(summary)
     return summaries
 
+# new
+
+
+def makeQ(target_sentence, field=''):
+    return f"({target_sentence}) AND (_exists_:doi)"
+
+
+def check_words_in_string(string, words):
+    for word in words:
+        if word in string:
+            return True
+    return False
+
+
+def beautify_string(text):
+    text = text.replace('-', '')
+    text = re.sub(
+        r'(?<=[a-z])(?=[A-Z0-9])|(?<=[A-Z0-9])(?=[A-Z][a-z])', ' ', text)
+
+    return text
+
+
+def query_api(url_fragment, query, limit=2):
+    headers = {"Authorization": "Bearer "+api_key}
+    query = {"q": query,  "limit": limit}
+    response = requests.post(
+        f"{api_endpoint}{url_fragment}", data=json.dumps(query), headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Error code {response.status_code}, {response.content}")
+
+
+def get_result(results):
+    articles_title = []
+    articles_fulltext = []
+    if results == None:
+        return articles_title, articles_fulltext
+    for i in results['results']:
+        # if len(i['fullText']) > 2500:  #filter some text
+        articles_title.append(i['title'])
+        articles_fulltext.append(i['fullText'])
+    return articles_title, articles_fulltext
+
+
+def find_sentence_contexts(text, target_sentence):
+    # Split the text into sentences
+    target_sentence = target_sentence.lower()
+    sentences = nltk.tokenize.sent_tokenize(text.lower(), language='english')
+    # Find the target sentence and its context
+    noise = ['pdf', 'doi', 'copyright', 'https']
+    contexts = []
+    for i, sentence in enumerate(sentences):
+        if check_words_in_string(sentence, noise):
+            continue
+        if target_sentence in sentence:
+            prev_sentence = sentences[i - 1] if i > 0 else ""
+            next_sentence = sentences[i + 1] if i < len(sentences) - 1 else ""
+            if check_words_in_string(prev_sentence, noise) or check_words_in_string(next_sentence, noise):
+                continue
+            context = prev_sentence + " " + sentence + " " + next_sentence
+            context = context.strip()
+            context = beautify_string(context)
+            contexts.append(context)
+            prev_sentence, sentence, next_sentence = '', '', ''
+
+    return '<br>'.join(contexts)
+
+
+def find_articles(sentence, limit=2):
+    sentence = strip_punctuation(sentence)
+    results = query_api("search/works", makeQ(sentence), limit=limit)
+    articles_title, articles_fulltext = get_result(results)
+    articles_context = [find_sentence_contexts(
+        text, sentence) for text in articles_fulltext]
+    return articles_title, articles_context
+
 
 @app.route('/process', methods=['POST'])
 def process():
     # Get the input data from the request
     data = request.json
     input_text = data['original_text']
+    input_text = input_text.replace('\n', '').strip()
+    articles_title, articles_context = find_articles(input_text)
 
-    articles_title, articles_context = find_citing_articles(input_text)
-    print(articles_context)
     # Return the output as a JSON response
-    return jsonify({'output_text': articles_context})
+    return jsonify({'output_text': articles_context, 'output_title': articles_title, })
 
 
 if __name__ == '__main__':

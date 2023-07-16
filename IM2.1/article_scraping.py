@@ -62,7 +62,7 @@ def find_sentence_contexts(text, target_sentence):
     return ' --- '.join(contexts)
 
 
-def query_api(url_fragment, query, limit=10):
+def query_api(url_fragment, query, limit=2):
     headers = {"Authorization": "Bearer "+api_key}
     query = {"q": query,  "limit": limit}
     response = requests.post(
@@ -74,15 +74,17 @@ def query_api(url_fragment, query, limit=10):
 
 
 def get_result(results):
-    articles = []
+    articles_title = []
+    articles_fulltext = []
     for i in results['results']:
         # if len(i['fullText']) > 2500:
-        article = {
-            'title': i['title'],
-            'text': i['fullText']
-        }
-        articles.append(article)
-    return articles
+        # article = {
+        #     'title': i['title'],
+        #     'text': i['fullText']
+        # }
+        articles_title.append(i['title'])
+        articles_fulltext.append(i['fullText'])
+    return articles_title, articles_fulltext
 
 
 def summarize(contexts):
@@ -124,13 +126,23 @@ def makeQ(target_sentence, field=''):
     return f"({target_sentence}) AND (_exists_:doi)"
 
 
-sentence = 'I have a dream'
-results = query_api("search/works", makeQ(sentence), limit=2)
-full_content = get_result(results)
-only_text = [x['text'] for x in full_content]
-only_titles = [x['title'] for x in full_content]
-contexts = [find_sentence_contexts(x, sentence) for x in only_text]
-print(contexts)
+def find_articles(sentence, limit=2):
+    results = query_api("search/works", makeQ(sentence), limit=limit)
+    articles_title, articles_fulltext = get_result(results)
+    articles_context = [find_sentence_contexts(
+        text, sentence) for text in articles_fulltext]
+    return articles_title, articles_context
+
+
+# sentence = 'I have a dream'
+# results = query_api("search/works", makeQ(sentence), limit=2)
+# articles_title, articles_fulltext = get_result(results)
+# contexts = [find_sentence_contexts(x, sentence) for x in articles_fulltext]
+# print(contexts)
 
 # summary = davinci03(contexts[0])
 # print(summary)
+
+sentence = 'I have a dream'
+articles_title, articles_context = find_articles(sentence)
+print()

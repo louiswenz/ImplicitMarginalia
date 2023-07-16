@@ -43,8 +43,22 @@
                     body: JSON.stringify({ original_text: inputText })
                 });
                 const data = await response.json();
-                const outputText =  data.output_text.map((item) => `<p">${item}</p>`).join('');
-                popupContent.innerHTML = outputText;
+                //const outputText =  data.output_text.map((item) => `<p">${item}</p>`).join('');
+                const titles = data.output_title;
+                const outputText = data.output_text;
+
+                // Create an array of card HTML elements
+                const cards = titles.map((title, index) => `
+                <div class="card">
+                    <h3>${title}</h3>
+                    <p>${outputText[index]}</p>
+                </div>
+                `);
+                const container = document.createElement('div');
+                container.classList.add('card-container');
+                container.innerHTML = cards.join('');
+                popupContent.innerHTML = '';
+                popupContent.appendChild(container);
                 popupWindow.style.display = 'block';
                 event.stopPropagation();
                 paragraph_container.classList.add('fade-out');

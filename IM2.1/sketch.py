@@ -6,7 +6,7 @@ import nltk.data
 
 # Set up OpenAI API key
 # Replace with your OpenAI API key
-openai.api_key = "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"
+openai.api_key = ""
 
 
 def find_citing_articles1(citation_sentence):

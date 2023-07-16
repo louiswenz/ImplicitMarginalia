@@ -90,3 +90,21 @@ input[type="submit"] {
     background-color: #b0abab;
     margin: 10px;
 }
+
+.card {
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 10px;
+    display: block;
+    text-align: left;
+}
+
+.card h3 {
+    color: #333;
+}
+
+.card p {
+    color: #666;
+    text-align: left;
+}
