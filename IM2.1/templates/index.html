@@ -43,27 +43,46 @@
                     body: JSON.stringify({ original_text: inputText })
                 });
                 const data = await response.json();
-                //const outputText =  data.output_text.map((item) => `<p">${item}</p>`).join('');
                 const titles = data.output_title;
                 const outputText = data.output_text;
+                
+                if (titles.length === 0) {
+                    // No result, apply centering CSS class
+                    popupContent.classList.add('no-result');
+                    } 
+                else {
+                    // Result found, remove centering CSS class
+                    popupContent.classList.remove('no-result');
+                    }
+                // Check if the titles array is empty
+                if (titles.length === 0) {
+                    const container = document.createElement('div');
+                    container.classList.add('card-container');
+                    container.innerHTML = '<div class="card"><p>No result</p></div>';
+                    popupContent.innerHTML = '';
+                    popupContent.appendChild(container);
+                } else {
+                    // Create an array of card HTML elements
+                    const cards = titles.map((title, index) => `
+                        <div class="card">
+                            <h3>${title}</h3>
+                            <p>${outputText[index]}</p>
+                        </div>`
+                    );
+                    
+                    const container = document.createElement('div');
+                    container.classList.add('card-container');
+                    container.innerHTML = cards.join('');
+                    popupContent.innerHTML = '';
+                    popupContent.appendChild(container);
+                }
 
-                // Create an array of card HTML elements
-                const cards = titles.map((title, index) => `
-                <div class="card">
-                    <h3>${title}</h3>
-                    <p>${outputText[index]}</p>
-                </div>
-                `);
-                const container = document.createElement('div');
-                container.classList.add('card-container');
-                container.innerHTML =  cards.join('');
-                popupContent.innerHTML = '';
-                popupContent.appendChild(container);
                 popupWindow.style.display = 'block';
                 event.stopPropagation();
                 paragraph_container.classList.add('fade-out');
             });
         });
+
     
         popupWindow.addEventListener('click', (event) => {
             event.stopPropagation();

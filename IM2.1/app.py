@@ -103,9 +103,10 @@ def summarize(contexts):
 # new
 
 
-def makeQ(target_sentence, field=''):
-    # (_exists_:doi)
-    return f"({target_sentence} AND (_exists_:doi))"
+def makeQ(target_sentence, field='Sociology'):
+    # (fullText:{target_sentence})
+    # AND (field_of_study:{field})
+    return f"({target_sentence} AND (_exists_:doi) AND (fullText:{target_sentence}) )"
 
 
 def check_words_in_string(string, words):
@@ -200,8 +201,8 @@ def process():
     articles_title, articles_context = find_articles(input_text)
 
     # Return the output as a JSON response
-    return jsonify({'output_text': articles_context, 'output_title': articles_title, })
+    return jsonify({'output_text': articles_context, 'output_title': articles_title})
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5002)
