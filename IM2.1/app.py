@@ -104,7 +104,8 @@ def summarize(contexts):
 
 
 def makeQ(target_sentence, field=''):
-    return f"({target_sentence}) AND (_exists_:doi)"
+    # (_exists_:doi)
+    return f"({target_sentence} AND (_exists_:doi))"
 
 
 def check_words_in_string(string, words):
@@ -166,15 +167,27 @@ def find_sentence_contexts(text, target_sentence):
             contexts.append(context)
             prev_sentence, sentence, next_sentence = '', '', ''
 
-    return '<br>'.join(contexts)
+    return '<br><br>'.join(contexts)
 
 
-def find_articles(sentence, limit=2):
+def find_articles(sentence, limit=10):
     sentence = strip_punctuation(sentence)
     results = query_api("search/works", makeQ(sentence), limit=limit)
     articles_title, articles_fulltext = get_result(results)
-    articles_context = [find_sentence_contexts(
-        text, sentence) for text in articles_fulltext]
+    # articles_context = [find_sentence_contexts(
+    #     text, sentence) for text in articles_fulltext]
+    articles_context = []
+    for i, v in enumerate(articles_fulltext):
+        context = find_sentence_contexts(v, sentence)
+        if context:
+            articles_context.append(context)
+        else:
+            articles_context.append('')
+            articles_title[i] = ''
+
+    articles_context = [string for string in articles_context if string != '']
+    articles_title = [string for string in articles_title if string != '']
+
     return articles_title, articles_context
 
 
