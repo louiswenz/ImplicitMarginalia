@@ -74,12 +74,12 @@ input[type="submit"] {
     overflow-y: auto;
     overflow-x: hidden;
     width: 50%;
-    /* Adjust the width as needed */
+
 }
 
 
 .fade-out {
-    opacity: 0.3;
+    opacity: 0.1;
 }
 
 .divider {

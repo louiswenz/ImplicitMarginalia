@@ -105,8 +105,8 @@ def summarize(contexts):
 
 def makeQ(target_sentence, field='Sociology'):
     # (fullText:{target_sentence})
-    # AND (field_of_study:{field})
-    return f"({target_sentence} AND (_exists_:doi) AND (fullText:{target_sentence}) )"
+    # AND (fieldOfStudy:{field})
+    return f"{target_sentence} AND (_exists_:doi) AND (fullText:{target_sentence})"
 
 
 def check_words_in_string(string, words):
@@ -155,6 +155,7 @@ def find_sentence_contexts(text, target_sentence):
     noise = ['pdf', 'doi', 'copyright', 'https']
     contexts = []
     for i, sentence in enumerate(sentences):
+        ref = check_words_in_string(sentence, noise)
         if check_words_in_string(sentence, noise):
             continue
         if target_sentence in sentence:

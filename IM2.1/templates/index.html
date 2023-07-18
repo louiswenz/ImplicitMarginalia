@@ -5,11 +5,13 @@
     <link rel="stylesheet" type="text/css" href="/static/style.css">
 </head>
 <body>
-    <h1>Paragraph Analysis 2.1</h1>
-    <form method="POST">
-        <textarea name="text" rows="10" cols="50"></textarea><br><br>
-        <input type="submit" value="Submit">
-    </form>
+    <div class="topsection">
+        <h1>Paragraph Analysis 2.1</h1>
+        <form method="POST">
+            <textarea name="text" rows="10" cols="50"></textarea><br><br>
+            <input type="submit" value="Submit">
+        </form>
+    </div>
     <br><br>
     <div class="paragraph-container">
         {% for paragraph in paragraphs %}
@@ -27,11 +29,52 @@
         <div class="popup-content"></div>
     </div>
     <script>
+        function makeDraggable(element)
+        {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            const edgeSize = 340; // The size of the edge in pixels
+            element.onmousedown = dragMouseDown;
+
+            function dragMouseDown(e) {
+                e = e || window.event;
+                e.preventDefault();
+                // get the mouse cursor position at startup:
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                // call a function whenever the cursor moves:
+                document.onmousemove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                e.preventDefault();
+                // calculate the new cursor position:
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                // set the element's new position:
+                if ((pos3 < edgeSize || pos3 > window.innerWidth - edgeSize) || (pos4 < edgeSize || pos4 > window.innerHeight - edgeSize)) {
+                    element.style.top = (element.offsetTop - pos2) + "px";
+                    element.style.left = (element.offsetLeft - pos1) + "px";
+                }
+            }
+
+            function closeDragElement() {
+                // stop moving when mouse button is released:
+                document.onmouseup = null;
+                document.onmousemove = null;
+            }
+        }
+
         const sentences = document.querySelectorAll('.sentence');
         const popupWindow = document.querySelector('.popup-window');
         const popupContent = document.querySelector('.popup-content');
         const paragraph_container = document.querySelector('.paragraph-container');
-    
+        const topsection = document.querySelector('.topsection');
+        // makeDraggable(popupContent);
+
         sentences.forEach((sentence) => {
             sentence.addEventListener('click', async(event) => {
                 const inputText = sentence.textContent;
@@ -76,10 +119,11 @@
                     popupContent.innerHTML = '';
                     popupContent.appendChild(container);
                 }
-
+                
                 popupWindow.style.display = 'block';
                 event.stopPropagation();
                 paragraph_container.classList.add('fade-out');
+                topsection.classList.add('fade-out');
             });
         });
 
@@ -91,6 +135,7 @@
         document.addEventListener('click', () => {
             popupWindow.style.display = 'none';
             paragraph_container.classList.remove('fade-out');
+            topsection.classList.remove('fade-out');
         });
     </script>
 </body>
