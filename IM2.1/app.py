@@ -8,7 +8,8 @@ import re
 import nltk.data
 import json
 import nltk
-from nltk.sentiment import SentimentIntensityAnalyzer
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from cachetools import cached, TTLCache
 
 # core api
 api_key = "8mNcp3SVfrGqwZI9Oe0YivbxFPUhBMTk"  # core api key
@@ -126,6 +127,7 @@ def beautify_string(text):
     return text
 
 
+@cached(cache=TTLCache(maxsize=100, ttl=300))
 def query_api(url_fragment, query, limit=2):
     headers = {"Authorization": "Bearer "+api_key}
     query = {"q": query,  "limit": limit}
@@ -143,7 +145,6 @@ def get_result(results):
     if results == None:
         return articles_title, articles_fulltext
     for i in results['results']:
-        # if len(i['fullText']) > 2500:  #filter some text
         articles_title.append(i['title'])
         articles_fulltext.append(i['fullText'])
     return articles_title, articles_fulltext
