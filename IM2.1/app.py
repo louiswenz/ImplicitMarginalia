@@ -15,8 +15,10 @@ from cachetools import cached, TTLCache
 api_key = "8mNcp3SVfrGqwZI9Oe0YivbxFPUhBMTk"  # core api key
 api_endpoint = "https://api.core.ac.uk/v3/"
 
-app = Flask(__name__, static_url_path='/static')
+# openai
 openai.api_key = ""
+
+app = Flask(__name__, static_url_path='/static')
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -46,7 +48,7 @@ def strip_punctuation(input_string):
     return cleaned_string
 
 
-def find_citing_articles(citation_sentence):  # OLD, not using
+def find_citing_articles(citation_sentence):  # not using
 
     citation_sentence = strip_punctuation(citation_sentence)
     search_url = f"https://scholar.google.com/scholar?hl=en&as_sdt=0%2C5&q={citation_sentence}"
@@ -105,9 +107,10 @@ def makeQ(target_sentence, field='Sociology'):
     return f"{target_sentence} AND (_exists_:doi) AND (fullText:{target_sentence})"
 
 
-def check_words_in_string(string, words):
-    for word in words:
-        if word in string:
+def check_noise_in_string(sentence, noise):
+    sentence = sentence.lower()
+    for n in noise:
+        if n in sentence:
             return True
     return False
 
@@ -152,12 +155,12 @@ def find_sentence_contexts(text, target_sentence):
              'all rights reserved', 'http://', '©']
     contexts = []
     for i, sentence in enumerate(sentences):
-        if check_words_in_string(sentence, noise):
+        if check_noise_in_string(sentence, noise):
             continue
         if target_sentence in sentence.lower():
             prev_sentence = sentences[i - 1] if i > 0 else ""
             next_sentence = sentences[i + 1] if i < len(sentences) - 1 else ""
-            if check_words_in_string(prev_sentence, noise) or check_words_in_string(next_sentence, noise):
+            if check_noise_in_string(prev_sentence, noise) or check_noise_in_string(next_sentence, noise):
                 prev_sentence, next_sentence = '', ''
                 continue
             context = prev_sentence + " " + sentence + " " + next_sentence
@@ -194,8 +197,6 @@ def find_articles(sentence, limit=10):
     sentence = strip_punctuation(sentence)
     results = query_api("search/works", makeQ(sentence), limit=limit)
     articles_title, articles_fulltext = get_result(results)
-    # articles_context = [find_sentence_contexts(
-    #     text, sentence) for text in articles_fulltext]
     articles_context = []
     for i, v in enumerate(articles_fulltext):
         context = find_sentence_contexts(v, sentence)
@@ -216,6 +217,7 @@ def find_articles(sentence, limit=10):
 def process():
     # Get the input data from the request
     data = request.json
+    # data cleaning
     input_text = data['original_text']
     input_text = input_text.replace('\n', '').strip()
     articles_title, articles_context = find_articles(input_text)
