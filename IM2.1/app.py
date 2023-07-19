@@ -150,18 +150,19 @@ def get_result(results):
 def find_sentence_contexts(text, target_sentence):
     # Split the text into sentences
     target_sentence = target_sentence.lower()
-    sentences = nltk.tokenize.sent_tokenize(text.lower(), language='english')
+    sentences = nltk.tokenize.sent_tokenize(text, language='english')
     # Find the target sentence and its context
-    noise = ['pdf', 'doi', 'copyright', 'https']
+    noise = ['pdf', 'doi', 'copyright', 'https',
+             'all rights reserved', 'http://', '©']
     contexts = []
     for i, sentence in enumerate(sentences):
-        ref = check_words_in_string(sentence, noise)
         if check_words_in_string(sentence, noise):
             continue
-        if target_sentence in sentence:
+        if target_sentence in sentence.lower():
             prev_sentence = sentences[i - 1] if i > 0 else ""
             next_sentence = sentences[i + 1] if i < len(sentences) - 1 else ""
             if check_words_in_string(prev_sentence, noise) or check_words_in_string(next_sentence, noise):
+                prev_sentence, next_sentence = '', ''
                 continue
             context = prev_sentence + " " + sentence + " " + next_sentence
             context = context.strip()
