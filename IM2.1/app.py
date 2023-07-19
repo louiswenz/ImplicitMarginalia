@@ -7,6 +7,8 @@ import string
 import re
 import nltk.data
 import json
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
 
 # core api
 api_key = "8mNcp3SVfrGqwZI9Oe0YivbxFPUhBMTk"  # core api key
@@ -173,6 +175,27 @@ def find_sentence_contexts(text, target_sentence):
     return '<br><br>'.join(contexts)
 
 
+def find_most_opinionated_paragraph(text):
+    # Split text into paragraphs
+    paragraphs = text.split("<br><br>")
+
+    # Initialize Sentiment Intensity Analyzer
+    sia = SentimentIntensityAnalyzer()
+
+    # Find the paragraph with the highest sentiment score
+    max_sentiment_score = -1
+    most_opinionated_paragraph = ""
+
+    for paragraph in paragraphs:
+        if paragraph.strip():
+            sentiment_score = sia.polarity_scores(paragraph)['compound']
+            if sentiment_score > max_sentiment_score:
+                max_sentiment_score = sentiment_score
+                most_opinionated_paragraph = paragraph
+
+    return most_opinionated_paragraph
+
+
 def find_articles(sentence, limit=10):
     sentence = strip_punctuation(sentence)
     results = query_api("search/works", makeQ(sentence), limit=limit)
@@ -183,6 +206,7 @@ def find_articles(sentence, limit=10):
     for i, v in enumerate(articles_fulltext):
         context = find_sentence_contexts(v, sentence)
         if context:
+            context = find_most_opinionated_paragraph(context)
             articles_context.append(context)
         else:
             articles_context.append('')

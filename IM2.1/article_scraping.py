@@ -5,6 +5,8 @@ import openai
 import re
 import nltk.data
 from spellchecker import SpellChecker
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
 
 # open ai key (do not upload to github)
 openai.api_key = ''
@@ -59,7 +61,7 @@ def find_sentence_contexts(text, target_sentence):
             contexts.append(context)
             prev_sentence, sentence, next_sentence = '', '', ''
 
-    return ' --- '.join(contexts)
+    return '<br><br>'.join(contexts)
 
 
 def query_api(url_fragment, query, limit=2):
@@ -128,7 +130,28 @@ def makeQ(target_sentence, field=''):
     return f"{target_sentence} AND (_exists_:doi)"
 
 
-def find_articles(sentence, limit=20):
+def find_most_opinionated_paragraph(text):
+    # Split text into paragraphs
+    paragraphs = text.split("<br><br>")
+
+    # Initialize Sentiment Intensity Analyzer
+    sia = SentimentIntensityAnalyzer()
+
+    # Find the paragraph with the highest sentiment score
+    max_sentiment_score = -1
+    most_opinionated_paragraph = ""
+
+    for paragraph in paragraphs:
+        if paragraph.strip():
+            sentiment_score = sia.polarity_scores(paragraph)['compound']
+            if sentiment_score > max_sentiment_score:
+                max_sentiment_score = sentiment_score
+                most_opinionated_paragraph = paragraph
+
+    return most_opinionated_paragraph
+
+
+def find_articles(sentence, limit=10):
     results = query_api("search/works", makeQ(sentence), limit=limit)
     articles_title, articles_fulltext = get_result(results)
     # articles_context = [find_sentence_contexts(
@@ -137,6 +160,7 @@ def find_articles(sentence, limit=20):
     for i, v in enumerate(articles_fulltext):
         context = find_sentence_contexts(v, sentence)
         if context:
+            context = find_most_opinionated_paragraph(context)
             articles_context.append(context)
         else:
             articles_context.append('')
@@ -147,7 +171,6 @@ def find_articles(sentence, limit=20):
 
     return articles_title, articles_context
 
-
 # sentence = 'I have a dream'
 # results = query_api("search/works", makeQ(sentence), limit=2)
 # articles_title, articles_fulltext = get_result(results)
@@ -157,6 +180,9 @@ def find_articles(sentence, limit=20):
 # summary = davinci03(contexts[0])
 # print(summary)
 
+
 sentence = 'I have a dream'
 articles_title, articles_context = find_articles(sentence)
-print()
+for i in articles_context:
+    print(i)
+    print('----------')
