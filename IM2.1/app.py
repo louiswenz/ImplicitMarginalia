@@ -27,14 +27,6 @@ def index():
 
         sentences_all = split_sentence(paragraphs)
 
-        # sentence_insights = []
-        # for paragraph in sentences_all:
-        #     for sentence in paragraph:
-        #         citing_titles, citing_contexts = find_citing_articles(sentence)
-        #         summaries = summarize(citing_contexts)
-        #         sentence_insight = zip(citing_titles, summaries)
-        #     sentence_insights.append(sentence_insight)
-
         return render_template('index.html', paragraphs=sentences_all)
     return render_template('index.html', paragraphs=[])
 
@@ -54,7 +46,8 @@ def strip_punctuation(input_string):
     return cleaned_string
 
 
-def find_citing_articles(citation_sentence):
+def find_citing_articles(citation_sentence):  # OLD, not using
+
     citation_sentence = strip_punctuation(citation_sentence)
     search_url = f"https://scholar.google.com/scholar?hl=en&as_sdt=0%2C5&q={citation_sentence}"
     response = requests.get(search_url)
@@ -81,7 +74,7 @@ def find_citing_articles(citation_sentence):
     return articles_title, articles_context
 
 
-def summarize(contexts):
+def summarize(contexts):  # not using
     # Prepare the search query
     summaries = []
     for i in contexts:
