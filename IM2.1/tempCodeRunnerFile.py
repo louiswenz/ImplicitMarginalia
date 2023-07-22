@@ -1,1 +1,1 @@
-print(contexts)
+text = beautify_string(text)

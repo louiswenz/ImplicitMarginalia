@@ -7,6 +7,10 @@ import nltk.data
 from spellchecker import SpellChecker
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
+from newsapi import NewsApiClient
+import newspaper
+import time
+import string
 
 # open ai key (do not upload to github)
 openai.api_key = ''
@@ -14,50 +18,52 @@ openai.api_key = ''
 api_key = "8mNcp3SVfrGqwZI9Oe0YivbxFPUhBMTk"  # core api key
 api_endpoint = "https://api.core.ac.uk/v3/"
 
+newsapi = NewsApiClient(api_key='fa9f684c11bf41e9917bed3fe109a308')  # news api
 
-def check_words_in_string(string, words):
-    for word in words:
-        if word in string:
+
+def strip_punctuation(input_string):
+    # Remove leading and trailing whitespace and punctuation
+    cleaned_string = input_string.strip(string.whitespace + string.punctuation)
+    return cleaned_string
+
+
+def check_noise_in_string(sentence, noise):
+    sentence = sentence.lower()
+    for n in noise:
+        if n in sentence:
             return True
     return False
 
 
 def beautify_string(text):
-    words = nltk.word_tokenize(text)
+    text = text.replace('-', '')
+    text = re.sub(
+        r'(?<=[a-z])(?=[A-Z0-9])|(?<=[A-Z0-9])(?=[A-Z][a-z])', ' ', text)
 
-    # Separate sticky words by adding white spaces
-    beautified_words = []
-    for word in words:
-        if len(beautified_words) > 0 and beautified_words[-1][-1].isalpha() and word[0].isalpha():
-            beautified_words.append(' ')
-        beautified_words.append(word)
-
-    # Join the beautified words with appropriate white spaces
-    beautified_text = ''.join(beautified_words)
-
-    return beautified_text
+    return text
 
 
 def find_sentence_contexts(text, target_sentence):
     # Split the text into sentences
     target_sentence = target_sentence.lower()
-    # sentences = re.split(
-    #     r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', text.lower())
-    sentences = nltk.tokenize.sent_tokenize(text.lower(), language='english')
+    # text = beautify_string(text)
+    sentences = nltk.tokenize.sent_tokenize(text, language='english')
     # Find the target sentence and its context
-    noise = ['pdf', 'doi', 'copyright', 'https']
+    noise = ['pdf', 'doi', 'copyright', 'https',
+             'all rights reserved', 'http://', '©']
     contexts = []
     for i, sentence in enumerate(sentences):
-        if check_words_in_string(sentence, noise):
+        if check_noise_in_string(sentence, noise):
             continue
-        if target_sentence in sentence:
+        if target_sentence in sentence.lower():
             prev_sentence = sentences[i - 1] if i > 0 else ""
             next_sentence = sentences[i + 1] if i < len(sentences) - 1 else ""
-            if check_words_in_string(prev_sentence, noise) or check_words_in_string(next_sentence, noise):
+            if check_noise_in_string(prev_sentence, noise) or check_noise_in_string(next_sentence, noise):
+                prev_sentence, next_sentence = '', ''
                 continue
             context = prev_sentence + " " + sentence + " " + next_sentence
             context = context.strip()
-            # context = beautify_string(context)
+            context = beautify_string(context)
             contexts.append(context)
             prev_sentence, sentence, next_sentence = '', '', ''
 
@@ -75,18 +81,31 @@ def query_api(url_fragment, query, limit=2):
         print(f"Error code {response.status_code}, {response.content}")
 
 
-def get_result(results):
+def core_get_results(results, target_sentence):
     articles_title = []
-    articles_fulltext = []
+    articles_context = []
     for i in results['results']:
-        # if len(i['fullText']) > 2500:
-        # article = {
-        #     'title': i['title'],
-        #     'text': i['fullText']
-        # }
-        articles_title.append(i['title'])
-        articles_fulltext.append(i['fullText'])
-    return articles_title, articles_fulltext
+        context = find_sentence_contexts(i['fullText'], target_sentence)
+        if context:
+            articles_title.append(i['title'])
+            context = find_most_opinionated_paragraph(context)
+            context = beautify_string(context)
+            articles_context.append(context)
+    return articles_title, articles_context
+
+
+def news_get_results(response, target_sentence):
+    titles = []
+    contexts = []
+    for v in response['articles']:
+        article = get_article_fromurl(v['url'])
+        context = find_sentence_contexts(article, target_sentence)
+        if context:
+            titles.append(v['title'])
+            context = find_most_opinionated_paragraph(context)
+            context = beautify_string(context)
+            contexts.append(context)
+    return titles, contexts
 
 
 def summarize(contexts):
@@ -151,25 +170,17 @@ def find_most_opinionated_paragraph(text):
     return most_opinionated_paragraph
 
 
-def find_articles(sentence, limit=10):
-    results = query_api("search/works", makeQ(sentence), limit=limit)
-    articles_title, articles_fulltext = get_result(results)
-    # articles_context = [find_sentence_contexts(
-    #     text, sentence) for text in articles_fulltext]
-    articles_context = []
-    for i, v in enumerate(articles_fulltext):
-        context = find_sentence_contexts(v, sentence)
-        if context:
-            context = find_most_opinionated_paragraph(context)
-            articles_context.append(context)
-        else:
-            articles_context.append('')
-            articles_title[i] = ''
+def find_articles(target_sentence, limit=5):
+    sentence = strip_punctuation(sentence)
+    core_results = query_api(
+        "search/works", makeQ(target_sentence), limit=limit)
+    news_response = getnewsapi(f'"{target_sentence}"', limit=limit)
+    core_articles_title, core_articles_context = core_get_results(
+        core_results, target_sentence)
+    news_articles_title, news_articles_context = news_get_results(
+        news_response, target_sentence)
 
-    articles_context = [string for string in articles_context if string != '']
-    articles_title = [string for string in articles_title if string != '']
-
-    return articles_title, articles_context
+    return core_articles_title+news_articles_title, core_articles_context+news_articles_context
 
 # sentence = 'I have a dream'
 # results = query_api("search/works", makeQ(sentence), limit=2)
@@ -181,8 +192,39 @@ def find_articles(sentence, limit=10):
 # print(summary)
 
 
-sentence = 'I have a dream'
+def getnewsapi(q, limit=10):
+    # q = '"' + q + '"'
+    response = newsapi.get_everything(q=q,
+                                      language='en',
+                                      sort_by='popularity',
+                                      page=1,
+                                      page_size=limit)
+    if response['status'] != 'ok':
+        print("Bad Request")
+
+    return response
+
+
+def get_article_fromurl(url):
+    # Initialize the Article object
+    article = newspaper.Article(url)
+
+    # Download and parse the article
+    article.download()
+    article.parse()
+
+    # Return the article's main content
+    return article.text
+
+
+start_time = time.time()
+sentence = 'i have a dream'
 articles_title, articles_context = find_articles(sentence)
-for i in articles_context:
-    print(i)
+end_time = time.time()
+elapsed_time = end_time - start_time
+for i, v in enumerate(articles_title):
+    print(v)
+    print(articles_context[i])
     print('----------')
+
+print(f"Elapsed time: {elapsed_time} seconds")

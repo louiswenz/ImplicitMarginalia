@@ -10,10 +10,15 @@ import json
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from cachetools import cached, TTLCache
+from newsapi import NewsApiClient
+import newspaper
 
 # core api
 api_key = "8mNcp3SVfrGqwZI9Oe0YivbxFPUhBMTk"  # core api key
 api_endpoint = "https://api.core.ac.uk/v3/"
+
+# news api
+newsapi = NewsApiClient(api_key='fa9f684c11bf41e9917bed3fe109a308')
 
 # openai
 openai.api_key = ""
@@ -123,6 +128,18 @@ def beautify_string(text):
     return text
 
 
+def get_article_fromurl(url):
+    # Initialize the Article object
+    article = newspaper.Article(url)
+
+    # Download and parse the article
+    article.download()
+    article.parse()
+
+    # Return the article's main content
+    return article.text
+
+
 @cached(cache=TTLCache(maxsize=100, ttl=300))
 def query_api(url_fragment, query, limit=2):
     headers = {"Authorization": "Bearer "+api_key}
@@ -135,15 +152,44 @@ def query_api(url_fragment, query, limit=2):
         print(f"Error code {response.status_code}, {response.content}")
 
 
-def get_result(results):
+def getnewsapi(q, limit=10):
+    # q = '"' + q + '"'
+    response = newsapi.get_everything(q=q,
+                                      language='en',
+                                      sort_by='popularity',
+                                      page=1,
+                                      page_size=limit)
+    if response['status'] != 'ok':
+        print("Bad Request")
+
+    return response
+
+
+def core_get_results(results, target_sentence):
     articles_title = []
-    articles_fulltext = []
-    if results == None:
-        return articles_title, articles_fulltext
+    articles_context = []
     for i in results['results']:
-        articles_title.append(i['title'])
-        articles_fulltext.append(i['fullText'])
-    return articles_title, articles_fulltext
+        context = find_sentence_contexts(i['fullText'], target_sentence)
+        if context:
+            articles_title.append(i['title'])
+            context = find_most_opinionated_paragraph(context)
+            context = beautify_string(context)
+            articles_context.append(context)
+    return articles_title, articles_context
+
+
+def news_get_results(response, target_sentence):
+    titles = []
+    contexts = []
+    for v in response['articles']:
+        article = get_article_fromurl(v['url'])
+        context = find_sentence_contexts(article, target_sentence)
+        if context:
+            titles.append(v['title'])
+            context = find_most_opinionated_paragraph(context)
+            context = beautify_string(context)
+            contexts.append(context)
+    return titles, contexts
 
 
 def find_sentence_contexts(text, target_sentence):
@@ -193,24 +239,17 @@ def find_most_opinionated_paragraph(text):
     return most_opinionated_paragraph
 
 
-def find_articles(sentence, limit=10):
-    sentence = strip_punctuation(sentence)
-    results = query_api("search/works", makeQ(sentence), limit=limit)
-    articles_title, articles_fulltext = get_result(results)
-    articles_context = []
-    for i, v in enumerate(articles_fulltext):
-        context = find_sentence_contexts(v, sentence)
-        if context:
-            context = find_most_opinionated_paragraph(context)
-            articles_context.append(context)
-        else:
-            articles_context.append('')
-            articles_title[i] = ''
+def find_articles(target_sentence, limit=5):
+    target_sentence = strip_punctuation(target_sentence)
+    core_results = query_api(
+        "search/works", makeQ(target_sentence), limit=limit)
+    news_response = getnewsapi(f'"{target_sentence}"', limit=limit)
+    core_articles_title, core_articles_context = core_get_results(
+        core_results, target_sentence)
+    news_articles_title, news_articles_context = news_get_results(
+        news_response, target_sentence)
 
-    articles_context = [string for string in articles_context if string != '']
-    articles_title = [string for string in articles_title if string != '']
-
-    return articles_title, articles_context
+    return core_articles_title+news_articles_title, core_articles_context+news_articles_context
 
 
 @app.route('/process', methods=['POST'])
