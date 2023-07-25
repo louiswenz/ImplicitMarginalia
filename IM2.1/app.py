@@ -12,6 +12,8 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from cachetools import cached, TTLCache
 from newsapi import NewsApiClient
 import newspaper
+from concurrent.futures import ThreadPoolExecutor
+import time
 
 # core api
 api_key = "8mNcp3SVfrGqwZI9Oe0YivbxFPUhBMTk"  # core api key
@@ -51,57 +53,6 @@ def strip_punctuation(input_string):
     # Remove leading and trailing whitespace and punctuation
     cleaned_string = input_string.strip(string.whitespace + string.punctuation)
     return cleaned_string
-
-
-def find_citing_articles(citation_sentence):  # not using
-
-    citation_sentence = strip_punctuation(citation_sentence)
-    search_url = f"https://scholar.google.com/scholar?hl=en&as_sdt=0%2C5&q={citation_sentence}"
-    response = requests.get(search_url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    articles_title = []
-    articles_context = []
-
-    results = soup.find_all('div', class_='gs_ri')
-
-    for result in results:
-        title_element = result.find('h3', class_='gs_rt')
-        if title_element:
-            title = title_element.text.strip()
-            title = title.replace("[HTML]", "").strip()
-
-            # Extracting the citation sentence and its context
-            context_paragraph = result.find('div', class_='gs_rs').text
-            context_paragraph = context_paragraph.replace("\n", "").strip()
-            # Checking if the citation sentence is present in the context sentences
-            if citation_sentence.lower() in context_paragraph.lower():
-                articles_title.append(title)
-                articles_context.append(context_paragraph)
-
-    return articles_title, articles_context
-
-
-def summarize(contexts):  # not using
-    # Prepare the search query
-    summaries = []
-    for i in contexts:
-        query = f"Summarize the following text: {i}"
-
-        # Issue the search request
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are an assistant that summarizes text. Be descriptive. Talk in first person"},
-                {"role": "user", "content": query}
-            ],
-            max_tokens=100,
-            stop=None,
-            n=1,
-            temperature=0.3
-        )
-        summary = response["choices"][0]["message"]["content"]
-        summaries.append(summary)
-    return summaries
 
 # new
 
@@ -152,6 +103,7 @@ def query_api(url_fragment, query, limit=2):
         print(f"Error code {response.status_code}, {response.content}")
 
 
+@cached(cache=TTLCache(maxsize=100, ttl=300))
 def getnewsapi(q, limit=10):
     # q = '"' + q + '"'
     response = newsapi.get_everything(q=q,
@@ -211,9 +163,8 @@ def find_sentence_contexts(text, target_sentence):
                 continue
             context = prev_sentence + " " + sentence + " " + next_sentence
             context = context.strip()
-            context = beautify_string(context)
             contexts.append(context)
-            prev_sentence, sentence, next_sentence = '', '', ''
+            prev_sentence, next_sentence = '', ''
 
     return '<br><br>'.join(contexts)
 
@@ -241,9 +192,19 @@ def find_most_opinionated_paragraph(text):
 
 def find_articles(target_sentence, limit=5):
     target_sentence = strip_punctuation(target_sentence)
-    core_results = query_api(
-        "search/works", makeQ(target_sentence), limit=limit)
-    news_response = getnewsapi(f'"{target_sentence}"', limit=limit)
+
+    with ThreadPoolExecutor() as executor:
+        # core_results = query_api(
+        #     "search/works", makeQ(target_sentence), limit=limit)
+        # news_response = getnewsapi(f'"{target_sentence}"', limit=limit)
+        future_core = executor.submit(
+            query_api, "search/works", makeQ(target_sentence), limit=limit)
+        future_news = executor.submit(
+            getnewsapi, f'"{target_sentence}"', limit=limit)
+        # Get the results from the API calls
+        core_results = future_core.result()
+        news_response = future_news.result()
+
     core_articles_title, core_articles_context = core_get_results(
         core_results, target_sentence)
     news_articles_title, news_articles_context = news_get_results(
@@ -255,12 +216,14 @@ def find_articles(target_sentence, limit=5):
 @app.route('/process', methods=['POST'])
 def process():
     # Get the input data from the request
+    start_time = time.time()
     data = request.json
     # data cleaning
     input_text = data['original_text']
     input_text = input_text.replace('\n', '').strip()
     articles_title, articles_context = find_articles(input_text)
-
+    end_time = time.time()
+    print(f"Elapsed time: {end_time-start_time} seconds")
     # Return the output as a JSON response
     return jsonify({'output_text': articles_context, 'output_title': articles_title})
 
