@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Paragraph Analysis 3</title>
+    <link rel="stylesheet" type="text/css" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="topsection">
+      <h1>Paragraph Analysis 3</h1>
+      <form id="analysisForm" method="POST">
+        <textarea name="text" rows="10" cols="50"></textarea><br /><br />
+        <label for="category">Select a category:</label>
+        <select name="category" id="category">
+          <option value="None">None</option>
+          <option value="Arts">Arts</option>
+          <option value="History">History</option>
+          <option value="Science">Science</option>
+          <option value="Technology">Technology</option>
+        </select>
+        <!-- End of the drop-down menu -->
+        <input type="submit" value="Analyze" id="analyzeButton" />
+      </form>
+    </div>
+    <br /><br />
+    <div class="paragraph-container">
+      {% for paragraph in paragraphs %}
+      <div class="paragraph">
+        <button class="AnalyzeButton">Analyze</button>
+        <br />
+        {% for sentence in paragraph %}
+        <div class="sentence">
+          <span>{{ sentence }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="divider"></div>
+      {% endfor %}
+    </div>
+    <div class="popup-window">
+      <div class="popup-content"></div>
+    </div>
+    <script>
+      const paragraphs = document.querySelectorAll(".paragraph");
+      const popupWindow = document.querySelector(".popup-window");
+      const popupContent = document.querySelector(".popup-content");
+      const paragraph_container = document.querySelector(
+        ".paragraph-container"
+      );
+      const topsection = document.querySelector(".topsection");
+
+      // Function to analyze a paragraph when the "Analyze" button is clicked
+      async function analyzeParagraph(paragraph) {
+        const sentences = paragraph.querySelectorAll(".sentence");
+        const inputTexts = Array.from(
+          sentences,
+          (sentence) => sentence.textContent
+        );
+        const response = await fetch("/process", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ original_text: inputTexts }),
+        });
+        const data = await response.json();
+        const titles = data.output_title;
+        const outputText = data.output_text;
+
+        if (titles.length === 0) {
+          // No result, apply centering CSS class
+          popupContent.classList.add("no-result");
+        } else {
+          // Result found, remove centering CSS class
+          popupContent.classList.remove("no-result");
+        }
+        // Check if the titles array is empty
+        if (titles.length === 0) {
+          const container = document.createElement("div");
+          container.classList.add("card-container");
+          container.innerHTML = '<div class="card"><p>No result</p></div>';
+          popupContent.innerHTML = "";
+          popupContent.appendChild(container);
+        } else {
+          // Create an array of card HTML elements
+          const cards = titles.map(
+            (title, index) => `
+                      <div class="card">
+                          <h3>${title}</h3>
+                          <p>${outputText[index]}</p>
+                      </div>`
+          );
+
+          const container = document.createElement("div");
+          container.classList.add("card-container");
+          container.innerHTML = cards.join("");
+          popupContent.innerHTML = "";
+          popupContent.appendChild(container);
+        }
+
+        popupWindow.style.display = "block";
+        paragraph_container.classList.add("fade-out");
+        topsection.classList.add("fade-out");
+      }
+
+      paragraphs.forEach((paragraph) => {
+        const analyzeButton = paragraph.querySelector(".AnalyzeButton");
+        analyzeButton.addEventListener("click", (event) => {
+          analyzeParagraph(paragraph);
+        });
+      });
+
+      popupWindow.addEventListener("click", (event) => {
+        event.stopPropagation();
+      });
+
+      document.addEventListener("click", () => {
+        popupWindow.style.display = "none";
+        paragraph_container.classList.remove("fade-out");
+        topsection.classList.remove("fade-out");
+      });
+    </script>
+  </body>
+</html>
