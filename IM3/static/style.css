@@ -28,6 +28,11 @@ textarea {
     resize: vertical;
 }
 
+#category {
+    width: 7%; /* Adjust the width as per your preference */
+    margin-right: 30px;
+  }
+
 input[type="submit"] {
     background-color: #4CAF50;
     color: white;
@@ -35,6 +40,19 @@ input[type="submit"] {
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    margin-top: 1px;
+}
+
+.topsection {
+    align-items: center;
+    text-align: center;
+    
+  }
+
+textarea {
+    width: 97%; /* Adjust the width as per your preference */
+    height: 150px; /* Adjust the height as per your preference */
+    resize: vertical;
 }
 
 .paragraph-container {
@@ -119,3 +137,53 @@ input[type="submit"] {
 .popup-content.no-result {
     top: 40%;
 }
+
+.loading {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 2s linear infinite;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+  }
+  
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .AnalyzeButton {
+    background-color:hsl(119, 27%, 46%);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-bottom: 10px;
+    border-radius: 7%;
+  }
+  
+  /* Style the button when hovering over it */
+  .AnalyzeButton:hover {
+    background-color: #0056b3;
+  }
+  
+  /* Style the button when it's clicked */
+  .AnalyzeButton:active {
+    background-color: #00307a;
+  }
+  
+  /* Style the button text */
+  .AnalyzeButton span {
+    font-size: 14px;
+  }
+  

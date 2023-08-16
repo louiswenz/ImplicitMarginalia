@@ -1,0 +1,15 @@
+beautifulsoup4==4.8.2
+cachetools==5.3.1
+Flask==2.3.1
+Flask==2.2.2
+newsapi_python==0.2.7
+newspaper3k==0.2.8
+nltk==3.8.1
+openai==0.27.7
+protobuf==4.24.0
+pyspellchecker==0.7.2
+Requests==2.31.0
+scholarly==1.7.11
+spellchecker==0.4
+torch==2.0.0
+transformers==4.30.2

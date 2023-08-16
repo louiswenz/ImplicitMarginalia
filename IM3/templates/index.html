@@ -8,7 +8,8 @@
     <div class="topsection">
       <h1>Paragraph Analysis 3</h1>
       <form id="analysisForm" method="POST">
-        <textarea name="text" rows="10" cols="50"></textarea><br /><br />
+        <textarea name="text" id="textInput" rows="10" cols="50"></textarea
+        ><br /><br />
         <label for="category">Select a category:</label>
         <select name="category" id="category">
           <option value="None">None</option>
@@ -18,11 +19,12 @@
           <option value="Technology">Technology</option>
         </select>
         <!-- End of the drop-down menu -->
-        <input type="submit" value="Analyze" id="analyzeButton" />
+        <input type="submit" value="Submit" id="analyzeButton" />
       </form>
     </div>
     <br /><br />
     <div class="paragraph-container">
+      <div class="loading" id="loadingDiv"></div>
       {% for paragraph in paragraphs %}
       <div class="paragraph">
         <button class="AnalyzeButton">Analyze</button>
@@ -47,9 +49,14 @@
         ".paragraph-container"
       );
       const topsection = document.querySelector(".topsection");
+      const loadingDiv = document.getElementById("loadingDiv");
 
       // Function to analyze a paragraph when the "Analyze" button is clicked
       async function analyzeParagraph(paragraph) {
+        paragraph_container.classList.add("fade-out");
+        topsection.classList.add("fade-out");
+        loadingDiv.style.display = "block"; // Show the loading animation
+
         const sentences = paragraph.querySelectorAll(".sentence");
         const inputTexts = Array.from(
           sentences,
@@ -65,6 +72,11 @@
         const data = await response.json();
         const titles = data.output_title;
         const outputText = data.output_text;
+        const category = data.category;
+
+        paragraph_container.classList.remove("fade-out");
+        topsection.classList.remove("fade-out");
+        loadingDiv.style.display = "none"; // Hide the loading animation
 
         if (titles.length === 0) {
           // No result, apply centering CSS class
@@ -77,7 +89,7 @@
         if (titles.length === 0) {
           const container = document.createElement("div");
           container.classList.add("card-container");
-          container.innerHTML = '<div class="card"><p>No result</p></div>';
+          container.innerHTML = `<div class="card"><p> Category: ${category} No result</p></div>`;
           popupContent.innerHTML = "";
           popupContent.appendChild(container);
         } else {
@@ -93,7 +105,7 @@
           const container = document.createElement("div");
           container.classList.add("card-container");
           container.innerHTML = cards.join("");
-          popupContent.innerHTML = "";
+          popupContent.innerHTML = `<p>Category: ${category}</p>`;
           popupContent.appendChild(container);
         }
 
